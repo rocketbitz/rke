@@ -57,15 +57,15 @@ func (h *Host) TunnelUpLocal(ctx context.Context, clusterVersion string) error {
 }
 
 func checkDockerVersion(ctx context.Context, h *Host, clusterVersion string) error {
+	if h.IgnoreDockerVersion {
+		return nil
+	}
 	info, err := h.DClient.Info(ctx)
 	if err != nil {
 		return fmt.Errorf("Can't retrieve Docker Info: %v", err)
 	}
 	logrus.Debugf("Docker Info found for host [%s]: %#v", h.Address, info)
 	h.DockerInfo = info
-	if h.IgnoreDockerVersion {
-		return nil
-	}
 	K8sSemVer, err := util.StrToSemVer(clusterVersion)
 	if err != nil {
 		return fmt.Errorf("Error while parsing cluster version [%s]: %v", clusterVersion, err)
@@ -90,6 +90,7 @@ func getSSHConfig(username, sshPrivateKeyString string, sshCertificateString str
 	config := &ssh.ClientConfig{
 		User:            username,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         dockerDialerTimeout,
 	}
 
 	// Kind of a double check now.
